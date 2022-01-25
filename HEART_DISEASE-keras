@@ -1,0 +1,193 @@
+Analysis
+------------------------------------------------------------------------------------------------------------
+1) The data is somewhat balanced in which 54% have heart disease and 46% don't have a heart disease.
+
+2) Most of the people are Males.Also males suffered more heart attacks as compared to females.
+
+3)In males percentage of people who have suffered heart attack is 44% but in female it s 75%.
+
+4) Most of the people are ariund the age 54.
+
+5) Most of the eople have typical angina but people who have non anginal have suffered the most heart attacks.
+
+6) Most of the people have resting blood pressure between 120-140. Therefore most of the people are suffering from high blood pressure.
+
+7) Females have higher resting blood pressure than males.
+
+8)People have high cholestrol. Females have higher cholestrol than males.
+
+9) Around 83% of people don't have fasting blood sugar.
+
+10) Around 28% of people are at the risk of a heart disease due to higher heart rate than the normal range.
+
+11) Around 32% have excersied induced angina.
+
+12)Females arae more prone to excercise induced angina
+
+13) Most of the people have normal blood flow and around 38% have reversible effect
+
+------------------------------------------------------------------------------------------------------------
+
+Used ANN as the algorithm using keras.
+
+
+#Code
+------------------------------------------------------------------------------------------------------------
+
+
+
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import tensorflow as tf
+from tensorflow import keras
+
+data=pd.read_csv("/Users/ishvaksud/Downloads/UNZIP_FOR_NOTEBOOKS_FINAL/DATA/heart.csv")
+
+sns.countplot(data["target"])
+data["target"].value_counts()/data.shape[0]
+
+data.shape
+
+data.info()
+
+data.isnull().sum()
+
+data.columns
+
+#Exploratory data analysis
+
+#sex
+sns.countplot(data["sex"])
+data.groupby("sex")["target"].value_counts()
+
+
+#age
+
+sns.histplot(data["age"],kde=True)
+data.describe()["age"]
+
+
+#cp
+"""
+Value 1: typical angina
+Value 2: atypical angina
+Value 3: non-anginal pain
+Value 4: asymptomatic 
+"""
+sns.countplot(data["cp"])
+data.groupby(["sex","cp"])["target"].value_counts()
+sns.countplot(data["target"],hue=data["cp"])
+
+#trestbps
+sns.histplot(data["trestbps"])
+data["trestbps"].mean()
+
+data.groupby("sex")["trestbps"].mean()
+
+#cholestrol
+sns.histplot(data["chol"],kde=True)
+data.describe()["chol"]
+data.groupby(data["sex"])["chol"].mean()
+
+#fbs
+data["fbs"].value_counts()
+
+#thalach
+sns.histplot(data["thalach"])
+data.describe()["thalach"]
+
+def heartrate(age):
+    if age<=20:
+        return 200
+    elif 20<age<=30:
+        return 190
+    elif 30<age<=35:
+        return 185
+    elif 35<age<=40:
+        return 180
+    elif 40<age<=45:
+        return 175
+    elif 45<age<=50:
+        return 170
+    elif 50<age<=55:
+        return 165
+    elif 55<age<60:
+        return 160
+    elif 60<age<=65:
+        return 155
+    else:
+        return 150
+    
+data["max_heart_rate"]=data["age"].apply(heartrate)
+
+x=data[data["thalach"]>data["max_heart_rate"]]
+
+#exang
+data.groupby(["exang","target"])["target"].count()
+    
+#thal
+data["thal"].value_counts()
+
+#Data preprocessing 
+
+data.drop("max_heart_rate",axis=1,inplace=True)
+
+value=pd.get_dummies(data,columns=["cp","slope","ca","thal"])
+
+value.drop(["cp","slope","ca","thal"],inplace=True,axis=1)
+        
+value.drop(["cp_3","slope_2","ca_4","thal_3"],inplace=True,axis=1)
+
+from sklearn.model_selection import train_test_split
+
+X=value.drop("target",axis=1)
+y=value["target"]
+
+X_train, X_test, y_train, y_test=train_test_split(X,y,test_size=0.33)
+
+from sklearn.preprocessing import StandardScaler
+
+scale=StandardScaler()
+X_train=scale.fit_transform(X_train)
+X_test=scale.transform(X_test)
+
+from keras.models import Sequential
+from keras.layers import BatchNormalization,Dense,LeakyReLU
+
+layers=[
+       keras.layers.Dense(8,activation='relu',input_dim=21),
+       keras.layers.Dense(12,activation="relu"),
+       keras.layers.BatchNormalization(),
+       keras.layers.Dense(16,activation="relu"),
+       keras.layers.Dense(12,activation="relu"),
+       keras.layers.Dense(1,activation="sigmoid")
+        
+        ]
+
+model=keras.models.Sequential(layers)
+
+model.summary()
+
+model.compile(optimizer="adam",loss="binary_crossentropy",metrics=["accuracy"])
+
+from keras.callbacks import EarlyStopping
+
+callback=keras.callbacks.EarlyStopping(monitor="loss",patience=5)
+
+model.fit(X_train,y_train,epochs=150,callbacks=callback)
+
+model.evaluate(X_test,y_test)
+
+pred=model.predict(X_test)
+pred=(pred>0.5)
+
+from sklearn.metrics import confusion_matrix,accuracy_score
+
+cm=confusion_matrix(pred,y_test)
+cm
+
+accuracy_score(y_test,pred)
+
+sns.heatmap(cm,annot=True)
