@@ -1,0 +1,60 @@
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tensorflow import keras
+import tensorflow as tf
+
+(X_train,y_train),(X_test,y_test)=keras.datasets.mnist.load_data()
+
+X_train=X_train/255
+X_test=X_test/255
+
+height,width=28,28
+
+X_train=X_train.reshape(X_train.shape[0],height,width,1)
+X_test=X_test.reshape(X_test.shape[0],height,width,1)
+input_shape=(height,width,1)
+
+X_train.shape
+
+from keras.models import Sequential
+from keras.layers import Conv2D,MaxPool2D,Dense
+
+layers=[
+        
+    keras.layers.Conv2D(32,kernel_size=(3,3),input_shape=input_shape,activation='relu'),
+    keras.layers.Conv2D(32,(3,3),activation="relu"),
+    keras.layers.MaxPool2D(pool_size=(2,2)),
+    keras.layers.Conv2D(64,(3,3),activation="relu"),
+    keras.layers.Conv2D(64,(3,3),activation="relu"),
+    keras.layers.MaxPool2D(pool_size=(2,2)),
+    keras.layers.Flatten(),
+    keras.layers.Dense(64,activation="sigmoid"),
+    keras.layers.Dense(10,activation="softmax"),
+    
+        ]
+
+model=keras.models.Sequential(layers)
+
+model.compile(loss="sparse_categorical_crossentropy",optimizer="adam",metrics=["accuracy"])
+
+model.fit(X_train,y_train,30)
+
+pred=model.predict(X_test)
+
+y_predicted_labels = [np.argmax(i) for i in pred]
+
+cm = tf.math.confusion_matrix(labels=y_test,predictions=y_predicted_labels)
+
+cm
+
+plt.figure(figsize = (10,7))
+sns.heatmap(cm, annot=True, fmt='d')
+plt.xlabel('Predicted')
+plt.ylabel('Truth')
+
+model.evaluate(X_test,y_test)
+
+
+
