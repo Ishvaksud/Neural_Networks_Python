@@ -1,0 +1,66 @@
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import  random
+
+class perceptron:
+    def __init__(self,eta:float=None,epochs:int=None):
+        self.weights=np.random.randn(3)* 1e-4
+        training=(eta is not None) and (epochs is not None)
+        if training:
+            print("The weights are",self.weights)
+        self.eta=eta
+        self.epochs=epochs
+    
+    def _z_outcome(self,w,b):
+        return np.dot(w,b)
+        
+    
+    def activation(self,z):
+        return np.where(z>0,1,0)
+        
+        
+
+    def fit(self,X,Y):
+        self.X=X
+        self.Y=Y
+        
+        bias=np.c_[self.X,-np.ones((len(self.X),1))]
+        print("Bias are:",bias)
+        
+        for epoch in range(self.epochs):
+            print(f"The epochs are >> {epoch}")
+            
+            z=self._z_outcome(bias,self.weights)
+            pred=self.activation(z)
+            print(f"Predicted values after forward pass: {pred}")
+            
+            self.error=self.Y-pred
+            
+            print(f"error: {self.error}")
+            
+            self.weights=self.weights+self.eta*np.dot(bias.T,self.error)
+            print(f"Updated weights are: {self.weights}")
+            
+            
+    def predict(self,a):
+         bias=np.c_[a,-np.ones((len(a),1))]
+         z=self._z_outcome(bias,self.weights)
+         return self.activation(z)
+        
+    
+data={
+      "x1":[0,0,1,1],
+      "x2":[0,1,0,1],
+      "y":[0,0,0,1]
+      }
+
+data=pd.DataFrame(data)
+
+X=data.drop("y",axis=1)
+y=data["y"]
+
+
+model=perceptron(eta=0.1,epochs=10)
+
+model.fit(X,y)
